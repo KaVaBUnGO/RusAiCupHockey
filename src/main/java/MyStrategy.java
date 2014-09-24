@@ -1,7 +1,5 @@
 import java.awt.Point;
 
-import com.sun.xml.internal.fastinfoset.algorithm.BuiltInEncodingAlgorithm.WordListener;
-
 import model.*;
 
 import static java.lang.StrictMath.*;
@@ -12,7 +10,8 @@ public final class MyStrategy implements Strategy {
   private static int side = 0;
   private static long defender = 0;
   private static long attacker = 0;
-  private static int checkRoleTick = 0;
+  private static int checkRoleTick = -1;
+  private static int swingingTick = -1;
 
 
   @Override
@@ -141,7 +140,7 @@ public final class MyStrategy implements Strategy {
     if (k > 100) {
       return 1;
     } else {
-      return k / 100;
+      return k / 100.0D;
     }
   }
 
@@ -154,31 +153,54 @@ public final class MyStrategy implements Strategy {
   private void startAttackerStrategy(Hockeyist self, World world, Game game, Move move) {
     // если текущий хоккеист замахивается то ударить по воротам
     if (self.getState() == HockeyistState.SWINGING) {
-      System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " Бью по воротам!");
-      move.setAction(ActionType.STRIKE);
-      return;
+        System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " Бью по воротам!");
+        move.setAction(ActionType.STRIKE);
+        return;
     }
+
+    // определение ударной точки
+    Point attackPoint =
+        new Point((int) (game.getWorldWidth()/2 - side * 150), (int) (game.getWorldHeight() * 0.25));
+
+
+    swingingTick = -1;
+    // получить оппонента
+    Player opponentPlayer = world.getOpponentPlayer();
+
     // если моя команда владеет шайбой
     if (world.getPuck().getOwnerPlayerId() == self.getPlayerId()) {
       // если текущий игрок владеет шайбой
       if (world.getPuck().getOwnerHockeyistId() == self.getId()) {
         System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " ВЛАДЕЮ ШАЙБОЙ!");
-        // получить оппонента
-        Player opponentPlayer = world.getOpponentPlayer();
-        // получили координаты центра ворот противника
-        double netX = 0.5D * (opponentPlayer.getNetBack() + opponentPlayer.getNetFront());
-        double netY = 0.5D * (opponentPlayer.getNetBottom() + opponentPlayer.getNetTop());
-        // расстояние от хоккеиста до дальней штанги противника
-        netY += (self.getY() < netY ? 0.5D : -0.5D) * game.getGoalNetHeight();
-        // угол до центра ворот
-        double angleToNet = self.getAngleTo(netX, netY);
-        // начинай поворачиваться к центру ворот
-        move.setTurn(angleToNet);
-        // если угол до ворот меньше ударного то начинай замах для удара
-        if (abs(angleToNet) < STRIKE_ANGLE) {
-          System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " НАИНАЮ замахиваться для броска!");
-          move.setAction(ActionType.SWING);
+        // если на месте для удара то ударить
+        if ((max(attackPoint.x, self.getX()) - min(attackPoint.x, self.getX()) < self.getRadius() / 2)
+            && (max(attackPoint.y, self.getY()) - min(attackPoint.y, self.getY()) < self
+                .getRadius() / 2)) {
+          // пытаемся ударить
+          // получили координаты центра ворот противника
+          double netX = 0.5D * (opponentPlayer.getNetBack() + opponentPlayer.getNetFront());
+          double netY = 0.5D * (opponentPlayer.getNetBottom() + opponentPlayer.getNetTop());
+          // расстояние от хоккеиста до дальней штанги противника
+          netY += (self.getY() < netY ? 0.5D : -0.5D) * game.getGoalNetHeight();
+          // угол до центра ворот
+          double angleToNet = self.getAngleTo(netX, netY);
+          // начинай поворачиваться к центру ворот
+          move.setTurn(angleToNet);
+          // если угол до ворот меньше ударного то начинай замах для удара
+          if (abs(angleToNet) < STRIKE_ANGLE) {
+            System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " НАИНАЮ замахиваться для броска!");
+            move.setAction(ActionType.SWING);
+            swingingTick++;
+          }
+          // идти на точку удара
+        } else {
+          move.setSpeedUp(1.0D);
+          move.setTurn(self.getAngleTo(attackPoint.x, attackPoint.y));
+          move.setAction(ActionType.TAKE_PUCK);
+          System.out.println("  Я ЗАЩИТНИК " + defender + " иду на точку удара!");
         }
+
+
         // если шайбой владеет сокомандник
       } else {
         // получаем ближайшего хоккеиста оппонента
