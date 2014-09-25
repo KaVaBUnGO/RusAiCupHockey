@@ -17,9 +17,9 @@ public final class MyStrategy implements Strategy {
 
   @Override
   public void move(Hockeyist self, World world, Game game, Move move) {
-    System.out.println("----------------------------------------");
-    System.out.println("ШАГ ИГРЫ             " + world.getTick());
-    System.out.println("----------------------------------------");
+    // System.out.println("----------------------------------------");
+    // System.out.println("ШАГ ИГРЫ             " + world.getTick());
+    // System.out.println("----------------------------------------");
     // Определяем с какой стороны мы играем
     if (side == 0) {
       if (world.getOpponentPlayer().getNetFront() > 600)
@@ -61,8 +61,8 @@ public final class MyStrategy implements Strategy {
         }
       }
       checkRoleTick = world.getTick();
-      System.out.println("Роли распределены: " + attacker + " - атакующий, " + defender
-          + " - защитник");
+      // System.out.println("Роли распределены: " + attacker + " - атакующий, " + defender +
+      // " - защитник");
     }
 
 
@@ -71,7 +71,12 @@ public final class MyStrategy implements Strategy {
     } else {
       startDefenseStrategy(self, world, game, move);
     }
-    System.out.println("------------Конец промежуточного хода -----------------");
+    // System.out.println("------------Конец промежуточного хода -----------------");
+
+    if (world.getTick() == 11999) {
+      System.out.println("Я : " + world.getMyPlayer().getGoalCount() + " Противник: "
+          + world.getOpponentPlayer().getGoalCount());
+    }
   }
 
 
@@ -100,7 +105,7 @@ public final class MyStrategy implements Strategy {
           // nearestOpponent)) {
           // если шайба на моей половине поля
           if ((world.getPuck().getX() - game.getWorldWidth() / 2) * side >= 5) {
-            System.out.println("    Я ЗАЩИТНИК " + defender + " иду отбирать шайбу!");
+            // System.out.println("    Я ЗАЩИТНИК " + defender + " иду отбирать шайбу!");
             // ИГРАЙ ДРУГ!!!
             move.setSpeedUp(1.0D);
             move.setTurn(self.getAngleTo(world.getPuck()));
@@ -117,13 +122,16 @@ public final class MyStrategy implements Strategy {
         .getRadius() / 2)
         && (max(baseDefencePoint.y, self.getY()) - min(baseDefencePoint.y, self.getY()) < self
             .getRadius() / 2)) {
- /*     double angleToOpponent =
-          self.getAngleTo(opponentPlayer.getNetFront(),
-              0.5D * (opponentPlayer.getNetBottom() + opponentPlayer.getNetTop())); */
+      /*
+       * double angleToOpponent = self.getAngleTo(opponentPlayer.getNetFront(), 0.5D *
+       * (opponentPlayer.getNetBottom() + opponentPlayer.getNetTop()));
+       */
       double angleToPack = self.getAngleTo(world.getPuck());
       move.setTurn(angleToPack);
       move.setSpeedUp(0.0D);
-      System.out.println("  Я ЗАЩИТНИК " + defender + " Остановился на точке защиты!                          "+self.getX() + " : "+self.getY());
+      // System.out.println("  Я ЗАЩИТНИК " + defender +
+      // " Остановился на точке защиты!                          " + self.getX() + " : " +
+      // self.getY());
     } else {
       // идти на точку защиты
       // Если точка защиты по Y за спиной хоккеиста идти развернуться спиной к точке и идти задом
@@ -133,10 +141,12 @@ public final class MyStrategy implements Strategy {
         move.setTurn(self.getAngleTo(baseDefencePoint.x, baseDefencePoint.y));
       } else {
         move.setSpeedUp(-1.0D * getBrakingCoef(self, baseDefencePoint));
-        move.setTurn(self.getAngleTo(baseDefencePoint.x, baseDefencePoint.y)>0 ? self.getAngleTo(baseDefencePoint.x, baseDefencePoint.y)-PI:self.getAngleTo(baseDefencePoint.x, baseDefencePoint.y)+PI);
+        move.setTurn(self.getAngleTo(baseDefencePoint.x, baseDefencePoint.y) > 0 ? self.getAngleTo(
+            baseDefencePoint.x, baseDefencePoint.y) - PI : self.getAngleTo(baseDefencePoint.x,
+            baseDefencePoint.y) + PI);
       }
       move.setAction(ActionType.TAKE_PUCK);
-      System.out.println("  Я ЗАЩИТНИК " + defender + " иду на точку защиты!");
+      // System.out.println("  Я ЗАЩИТНИК " + defender + " иду на точку защиты!");
     }
   }
 
@@ -161,16 +171,23 @@ public final class MyStrategy implements Strategy {
   private void startAttackerStrategy(Hockeyist self, World world, Game game, Move move) {
     // если текущий хоккеист замахивается то ударить по воротам
     if (self.getState() == HockeyistState.SWINGING) {
-      System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " Бью по воротам!");
+      // System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " Бью по воротам!");
       move.setAction(ActionType.STRIKE);
       return;
     }
 
     // определение ударной точки
-    Point attackPoint =
+    Point attackPoint1 =
         new Point((int) (game.getWorldWidth() / 2 - side * 150),
             (int) (game.getWorldHeight() * 0.25));
-
+    Point attackPoint2 =
+        new Point((int) (game.getWorldWidth() / 2 - side * 150),
+            (int) (game.getWorldHeight() * 0.75));
+    Point attackPoint = attackPoint1;
+    if (abs(hypot(self.getX() - attackPoint1.getX(), self.getY() - attackPoint1.getY())) > abs(hypot(
+        self.getX() - attackPoint2.getX(), self.getY() - attackPoint2.getY()))) {
+      attackPoint = attackPoint2;
+    }
 
     swingingTick = -1;
     // получить оппонента
@@ -180,7 +197,7 @@ public final class MyStrategy implements Strategy {
     if (world.getPuck().getOwnerPlayerId() == self.getPlayerId()) {
       // если текущий игрок владеет шайбой
       if (world.getPuck().getOwnerHockeyistId() == self.getId()) {
-        System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " ВЛАДЕЮ ШАЙБОЙ!");
+        // System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " ВЛАДЕЮ ШАЙБОЙ!");
         // если на месте для удара то ударить
         if ((max(attackPoint.x, self.getX()) - min(attackPoint.x, self.getX()) < self.getRadius() * 2)
             && (max(attackPoint.y, self.getY()) - min(attackPoint.y, self.getY()) < self
@@ -197,16 +214,18 @@ public final class MyStrategy implements Strategy {
           move.setTurn(angleToNet);
           // если угол до ворот меньше ударного то начинай замах для удара
           if (abs(angleToNet) < STRIKE_ANGLE) {
-            System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " НАИНАЮ замахиваться для броска!");
+            // System.out.println("  Я НАПАДАЮЩИЙ " + attacker +
+            // " НАИНАЮ замахиваться для броска!");
             move.setAction(ActionType.SWING);
             swingingTick++;
           }
           // идти на точку удара
         } else {
-          move.setSpeedUp(1.0D);
+
+          move.setSpeedUp(1.0D * getBrakingCoefForAttack(self, attackPoint));
           move.setTurn(self.getAngleTo(attackPoint.x, attackPoint.y));
           move.setAction(ActionType.TAKE_PUCK);
-          System.out.println("  Я ЗАЩИТНИК " + defender + " иду на точку удара!");
+          // System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " иду на точку удара!");
         }
 
 
@@ -220,10 +239,10 @@ public final class MyStrategy implements Strategy {
           if (self.getDistanceTo(nearestOpponent) > game.getStickLength()) {
             // беги с макс скоростью
             move.setSpeedUp(1.0D);
-            System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " Бегу отбирать шайбу");
+            // System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " Бегу отбирать шайбу");
             // иначе если могу ударить по шайбе - бить
           } else if (abs(self.getAngleTo(nearestOpponent)) < 0.5D * game.getStickSector()) {
-            System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " пытаюсь выбить шайбу!");
+            // System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " пытаюсь выбить шайбу!");
             move.setAction(ActionType.STRIKE);
           }
           // поворачивайся к хоккеисту чтоб бить
@@ -231,12 +250,19 @@ public final class MyStrategy implements Strategy {
         }
       }
     } else {
-      System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " бегу утанавливать контроль над шайбой!");
+      // System.out.println("  Я НАПАДАЮЩИЙ " + attacker +
+      // " бегу утанавливать контроль над шайбой!");
       move.setSpeedUp(1.0D);
       move.setTurn(self.getAngleTo(world.getPuck()));
       move.setAction(ActionType.TAKE_PUCK);
     }
   }
+
+  private double getBrakingCoefForAttack(Hockeyist self, Point baseDefencePoint) {
+    return 1;
+  }
+
+
 
   private static Hockeyist getNearestOpponent(double x, double y, World world) {
     Hockeyist nearestOpponent = null;
@@ -291,4 +317,6 @@ public final class MyStrategy implements Strategy {
   private double getDistanceBetweenUnits(Unit h1, Unit h2) {
     return hypot(h1.getX() - h2.getX(), h1.getY() - h2.getY());
   }
+
+
 }
