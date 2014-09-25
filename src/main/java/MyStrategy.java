@@ -1,8 +1,9 @@
 import java.awt.Point;
 
 import model.*;
-
+import java.lang.Math.*;
 import static java.lang.StrictMath.*;
+
 
 public final class MyStrategy implements Strategy {
   private static final double STRIKE_ANGLE = 1.0D * PI / 180.0D;
@@ -83,7 +84,7 @@ public final class MyStrategy implements Strategy {
 
     // Точка игры защитника
     Point baseDefencePoint =
-        new Point((int) game.getWorldWidth() / 2 + side * 350, (int) game.getWorldHeight() / 2);
+        new Point((int) game.getWorldWidth() / 2 + side * 430, (int) game.getWorldHeight() / 2 + 60);
 
     // если шайбой владеет чужая команда
     if (world.getPuck().getOwnerPlayerId() != self.getPlayerId()) {
@@ -98,7 +99,7 @@ public final class MyStrategy implements Strategy {
           // if (getDistanceBetweenUnits(self, nearestTeammate) > getDistanceBetweenUnits(self,
           // nearestOpponent)) {
           // если шайба на моей половине поля
-          if ((world.getPuck().getX() - game.getWorldWidth() / 2) * side >= 0) {
+          if ((world.getPuck().getX() - game.getWorldWidth() / 2) * side >= 5) {
             System.out.println("    Я ЗАЩИТНИК " + defender + " иду отбирать шайбу!");
             // ИГРАЙ ДРУГ!!!
             move.setSpeedUp(1.0D);
@@ -116,17 +117,24 @@ public final class MyStrategy implements Strategy {
         .getRadius() / 2)
         && (max(baseDefencePoint.y, self.getY()) - min(baseDefencePoint.y, self.getY()) < self
             .getRadius() / 2)) {
-      double angleToOpponent =
+ /*     double angleToOpponent =
           self.getAngleTo(opponentPlayer.getNetFront(),
-              0.5D * (opponentPlayer.getNetBottom() + opponentPlayer.getNetTop()));
-      move.setTurn(angleToOpponent);
+              0.5D * (opponentPlayer.getNetBottom() + opponentPlayer.getNetTop())); */
+      double angleToPack = self.getAngleTo(world.getPuck());
+      move.setTurn(angleToPack);
       move.setSpeedUp(0.0D);
-      System.out.println("  Я ЗАЩИТНИК " + defender + " Остановился на точке защиты!");
+      System.out.println("  Я ЗАЩИТНИК " + defender + " Остановился на точке защиты!                          "+self.getX() + " : "+self.getY());
     } else {
       // идти на точку защиты
-      move.setSpeedUp(1.0D * getBrakingCoef(self, baseDefencePoint));
-      move.setTurn(self.getAngleTo(baseDefencePoint.x, baseDefencePoint.y));
-
+      // Если точка защиты по Y за спиной хоккеиста идти развернуться спиной к точке и идти задом
+      // Если точка защиты по Y перед хоккеистом развернуться лицом к ней и идти вперед
+      if (side * baseDefencePoint.x < side * self.getX()) {
+        move.setSpeedUp(1.0D * getBrakingCoef(self, baseDefencePoint));
+        move.setTurn(self.getAngleTo(baseDefencePoint.x, baseDefencePoint.y));
+      } else {
+        move.setSpeedUp(-1.0D * getBrakingCoef(self, baseDefencePoint));
+        move.setTurn(self.getAngleTo(baseDefencePoint.x, baseDefencePoint.y)>0 ? self.getAngleTo(baseDefencePoint.x, baseDefencePoint.y)-PI:self.getAngleTo(baseDefencePoint.x, baseDefencePoint.y)+PI);
+      }
       move.setAction(ActionType.TAKE_PUCK);
       System.out.println("  Я ЗАЩИТНИК " + defender + " иду на точку защиты!");
     }
@@ -137,10 +145,10 @@ public final class MyStrategy implements Strategy {
   private double getBrakingCoef(Hockeyist self, Point baseDefencePoint) {
     double k =
         abs(hypot(self.getX() - baseDefencePoint.getX(), self.getY() - baseDefencePoint.getY()));
-    if (k > 100) {
+    if (k > 150) {
       return 1;
     } else {
-      return k / 100.0D;
+      return k / 200.0D;
     }
   }
 
@@ -153,14 +161,15 @@ public final class MyStrategy implements Strategy {
   private void startAttackerStrategy(Hockeyist self, World world, Game game, Move move) {
     // если текущий хоккеист замахивается то ударить по воротам
     if (self.getState() == HockeyistState.SWINGING) {
-        System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " Бью по воротам!");
-        move.setAction(ActionType.STRIKE);
-        return;
+      System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " Бью по воротам!");
+      move.setAction(ActionType.STRIKE);
+      return;
     }
 
     // определение ударной точки
     Point attackPoint =
-        new Point((int) (game.getWorldWidth()/2 - side * 150), (int) (game.getWorldHeight() * 0.25));
+        new Point((int) (game.getWorldWidth() / 2 - side * 150),
+            (int) (game.getWorldHeight() * 0.25));
 
 
     swingingTick = -1;
@@ -173,9 +182,9 @@ public final class MyStrategy implements Strategy {
       if (world.getPuck().getOwnerHockeyistId() == self.getId()) {
         System.out.println("  Я НАПАДАЮЩИЙ " + attacker + " ВЛАДЕЮ ШАЙБОЙ!");
         // если на месте для удара то ударить
-        if ((max(attackPoint.x, self.getX()) - min(attackPoint.x, self.getX()) < self.getRadius() / 2)
+        if ((max(attackPoint.x, self.getX()) - min(attackPoint.x, self.getX()) < self.getRadius() * 2)
             && (max(attackPoint.y, self.getY()) - min(attackPoint.y, self.getY()) < self
-                .getRadius() / 2)) {
+                .getRadius() * 2)) {
           // пытаемся ударить
           // получили координаты центра ворот противника
           double netX = 0.5D * (opponentPlayer.getNetBack() + opponentPlayer.getNetFront());
