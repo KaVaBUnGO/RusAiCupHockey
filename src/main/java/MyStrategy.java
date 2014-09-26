@@ -105,6 +105,17 @@ public final class MyStrategy implements Strategy {
           // nearestOpponent)) {
           // если шайба на моей половине поля
           if ((world.getPuck().getX() - game.getWorldWidth() / 2) * side >= 5) {
+            // посчитать точку куда он будет бить
+            if (world.getPuck().getOwnerPlayerId() > 0) {
+              Player me = world.getMyPlayer();
+              double netX = 0.5D * (me.getNetBack() + me.getNetFront());
+              double netY = 0.5D * (me.getNetBottom() + me.getNetTop());
+              Hockeyist opponentAttacker = getOpponentAttacker(world);
+              netY += (self.getY() < netY ? 0.5D : -0.5D) * game.getGoalNetHeight();
+              // встать на эту линию
+              // пойти отбирать
+            }
+
             // System.out.println("    Я ЗАЩИТНИК " + defender + " иду отбирать шайбу!");
             // ИГРАЙ ДРУГ!!!
             move.setSpeedUp(1.0D);
@@ -284,6 +295,22 @@ public final class MyStrategy implements Strategy {
     }
 
     return nearestOpponent;
+  }
+
+  private static Hockeyist getOpponentAttacker(World world) {
+    Hockeyist opponentAttacker = null;
+
+    for (Hockeyist hockeyist : world.getHockeyists()) {
+      if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE
+          || hockeyist.getState() == HockeyistState.KNOCKED_DOWN
+          || hockeyist.getState() == HockeyistState.RESTING) {
+        continue;
+      }
+      if (world.getPuck().getOwnerHockeyistId() == hockeyist.getId()) {
+        opponentAttacker = hockeyist;
+      }
+    }
+    return opponentAttacker;
   }
 
   private static Hockeyist getNearestTeammate(double x, double y, World world) {
